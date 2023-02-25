@@ -1,0 +1,122 @@
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>maze.js</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="constants.js"></script>
+    <script src="roomTemplates.js"></script>
+    <script src="mazeMaker.js"></script>
+</head>
+<body>
+    <div id="main">
+        <div id="presets">
+            <h2>Select Game Difficulty</h2>
+            <div id="easy" class="difficulty">
+                <input type="button" value="Easy Dungeon" onclick="easyMaze()" />
+                <p>
+                    Smaller dungeon with fewer locks and branches. 
+                    Hard to get lost in. 
+                </p>
+            </div>
+            <div id="med" class="difficulty">
+                <input type="button" value="Midling Dungeon" onclick="medMaze()" />
+                <p>
+                    The map and the compass are harder to find, and there are more locks.
+                    Larger dungeon with more paths to explore.
+                </p>
+            </div>
+            <div id="hard" class="difficulty">
+                <input type="button" value="HardDungeon" onclick="hardMaze()" />
+                <p>
+                    A huge 8x8 maze with hidden bombable walls and more ways to get lost.
+                </p>
+            </div>
+            <a id="advToggle" href="#" onclick="toggleAdvanced()">Advanced Settings</a>
+        </div>
+        <div id="advSettings">
+            <h2>Advanced Settings</h2>
+            <div class="normalInput">
+                <label for="width">Max Dungeon Width</label>
+                <input id="width" type="number" min="2" value="4">
+            </div>
+            <div class="normalInput">
+                <label for="height">Max Dungeon Height</label>
+                <input id="height" type="number" min="2" value="4">
+            </div>
+            <p>The Dungeon will be up to this size, but no larger.</p>
+            <div class="normalInput">
+                <label for="bossKey">Boss Key Required</label>
+                <input id="bossKey" type="checkbox" checked>
+            </div>
+            <p>A special boss key is hidden in the dungeon and is required to enter the boss's lair.</p>
+            <div class="normalInput">
+                <label for="dungeonItem">Dungeon Item</label>
+                <input id="dungeonItem" type="checkbox" checked>
+            </div>
+            <p>A special item is hidden in the dungeon, and is needed to defeat the boss!</p>
+            <div class="slider">
+                <label for="interestingPercent">Min. Percent Filled</label>
+                <input id="interestingPercent" type="range" step="0.01" min="0.05" max="1" value="0.35" oninput="interestingPercentValue.innerText = (Math.floor(this.value*100))+'%'">
+                <p id="interestingPercentValue">35%</p>
+            </div>
+            <p>The tool will generate a dungeons meet this minimum number of rooms, compared to the total possible (ie. height times width).</p>
+            <div class="slider">
+                <label for="minDeadEnds">Minimum Branches</label>
+                <input id="minDeadEnds" type="range" step="0.01" min="0.05" max="0.2" value="0.20" oninput="minDeadEndsValue.innerText = (Math.floor(this.value*100))+'%'">
+                <p id="minDeadEndsValue">20%</p>
+            </div>
+            <p>This setting controls the number of branches. A higher percentage means the maze 
+                will have more branching paths. The percentage is the total number of rooms that are
+                dead ends. 
+                Note that you shouldn't set this too high on smaller dungeons. 20% maximum.</p>
+            <div class="slider">
+                <label for="keyRatio">Locked Door Ratio</label>
+                <input id="keyRatio" type="range" step="0.01" min="0.00" max="1" value="0.30" oninput="keyRatioValue.innerText = (Math.floor(this.value*100))+'%'">
+                <p id="keyRatioValue">30%</p>
+            </div>
+            <p>Rough percentage of all doors that are locked. There is some randomness involved. 0 = all doors open, 1 = almost all doors locked.</p>
+            <div class="slider">
+                <label for="bombWallRatio">Bombable Wall Ratio</label>
+                <input id="bombWallRatio" type="range" step="0.01" min="0.00" max="1" value="0.05" oninput="bombWallRatioValue.innerText = (Math.floor(this.value*100))+'%'">
+                <p id="bombWallRatioValue">5%</p>
+            </div>
+            <p>Rough percentage of all "doors" that need to be bombed to open, ie. bombable walls. 0 = none, 1 = almost all.</p>
+            <div class="slider">
+                <label for="mapDifficulty">Map Difficulty</label>
+                <input id="mapDifficulty" type="range" step="0.01" min="0.00" max="1" value="0.3" oninput="mapDifficultyValue.innerText = (Math.floor(this.value*100))+'%'">
+                <p id="mapDifficultyValue">30%</p>
+            </div>
+            <p>How far in the dungeon is the Map? A lower number means closer to the entrance. 0 means you start with it, 100% means there is no map.</p>
+            <div class="slider">
+                <label for="compassDifficulty">Compass Difficulty</label>
+                <input id="compassDifficulty" type="range" step="0.01" min="0.00" max="1" value="0.3" oninput="compassDifficultyValue.innerText = (Math.floor(this.value*100))+'%'">
+                <p id="compassDifficultyValue">30%</p>
+            </div>
+            <p>How far in the dungeon is the Compass? A lower number means closer to the entrance. 0 means you start with it, 100% means there is no compass.</p>
+            <div class="normalInput">
+                <input type="button" value="Generate Dungeon" onclick="advMaze()" />
+            </div>
+
+        </div>
+        
+        <div id="renderTable">
+
+        </div>
+        <p id="PlayNow">
+
+        </p>
+        <p id="downloadJSON" style="display:none">
+            <a id="downloadLink" download="myFile.json">Download JSON</a>
+        </p>
+        
+
+    </div>
+    
+    
+
+
+
+
+
+</body>
+</html>
