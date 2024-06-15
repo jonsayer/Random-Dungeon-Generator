@@ -24,6 +24,7 @@ const startTemplate = {
     boss:'',
     bless: false
 }
+roomTemplates.push(startTemplate)
 roomTemplates.push({
     map: [
         'ycccccccccccw',

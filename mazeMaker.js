@@ -1,22 +1,26 @@
-// NOTE ON DEFAULTS:
-// should all be set on the html page
+// ***** CORE DEFAULT PARAMETERS
+// These are set by the user on the html page to generate different styles of dungeons
+// the defaults set here are not permanent
+
+// size of the dungeon. Always a rectangle of rooms for now
 let width = 5;
 let height = 5;
-//fraction of all possible cells accessible that counts as "interesting"
+// Fraction of all possible cells accessible that counts as "interesting"
+// A maze is interesting if it has many branching paths vs a single path
 let interestingPercent = .5;
-//fraction of all cells that must be dead ends. 
-//So, in a 5x4 grid, all filled, there are 20 cells, and a 0.05 ratio means at least one dead end.
+// fraction of all cells that must be dead ends. 
+// So, in a 5x4 grid, all filled, there are 20 cells, and a 0.05 ratio means at least one dead end.
 // above 0.2 seems unstable
 let minDeadEnds = .15;
 // is a boss key needed to enter the final room?
 let bossKey = true;
-// fraction of rooms with locked doors, and by extension keys. 0 = all doors open, 1 = all doors locked
+// fraction of rooms with locked doors, and by extension the minimum number of keys. 0 = all doors open, 1 = all doors locked
 let keyRatio = 0.3;
-// do we try to place a key item for beating the boss in the map?(If false, player starts with it)
+// do we try to place a key item for beating the boss in the map? (If false, player starts with it)
 let dungeonItem = true;
 // what ratio of doors aren't visible, and must be bombed? 0 = no bomb doors, 1 = all doors bombable
 let bombWallRatio = 0.05;
-// how hard is it to find the map? 0, you start with it, 1, do not place
+// How hard is it to find the map? 0, you start with it, 1, do not place
 // These will be in dead ends at this ratio from the start
 let mapDifficulty = 0.3;
 // how hard is it to find the compass? 0, you start with it, 1, do not place
@@ -24,14 +28,16 @@ let compassDifficulty = 0.3;
 // how difficult are the enemies? 1 - 10, 1 being easiest. This is a range to allow for some 
 // easy rooms and some hard ones
 let difficultyRange = [1,4]
-// heart pieces
+// heart pieces the player has when they start
 let heartPieces = 4;
 
+// Turns on the advanced settings, where you get to edit each preset, vs a simple setting, on the HTML page
 function toggleAdvanced(){
   document.getElementById('presets').style.display = 'none';
   document.getElementById('advSettings').style.display = 'block';
 }
 
+// Runs when user generates a maze after entering their own parameters
 function advMaze(){
   width = document.getElementById('width').value;
   height = document.getElementById('height').value;
@@ -46,6 +52,7 @@ function advMaze(){
   generateDungeon()
 }
 
+// Generates an easy maze
 function easyMaze(){
   width = 4;
   height = 4;
@@ -60,6 +67,7 @@ function easyMaze(){
   generateDungeon()
 }
 
+// Generates an middling maze
 function medMaze(){
   width = 5;
   height = 5;
@@ -74,6 +82,7 @@ function medMaze(){
   generateDungeon()
 }
 
+// Generates a large and hard maze
 function hardMaze(){
   width = 8;
   height = 8;
@@ -88,10 +97,12 @@ function hardMaze(){
   generateDungeon()
 }
 
+// ******** MAIN FUNCTION
+// Calls all the sub-functions that build the maze
 function generateDungeon() {
   let regen = false;
   let tries = 0
-  // the start is always in the bottom row of the maze
+  // the starting room is always in the bottom row of the maze
   const start = [height-1, Math.floor(Math.random() * width)];
   // the goal must be in the top half of the maze
   const goal = [Math.floor(Math.random() * (height/2)),Math.floor(Math.random() * width)]
@@ -101,7 +112,10 @@ function generateDungeon() {
         minDeadEnds = minDeadEnds - 0.05
         tries = 0;
       }
+      // Generate a maze using a depth-first search algorithm.
       var maze = createMazeDFS(width, height, start, goal,keyRatio,bombWallRatio) 
+      // Verify that the maze is "interesting" by verifying it has enough dead ends
+      // if it is not, repeat the maze generation. Repeat over and over until we hit a limit
       regen = isMazeInteresting(width,height,maze);
       tries++;
   }
@@ -115,7 +129,7 @@ function generateDungeon() {
   playLink.appendChild(document.createTextNode("Play Now"));
   document.getElementById("PlayNow").innerHTML = '';
   document.getElementById("PlayNow").appendChild(playLink);
-  playLink.href = "index.html?d="+encodeURIComponent(dungeonJson)
+  playLink.href = "play.html?d="+encodeURIComponent(dungeonJson)
   const blob = new Blob([dungeonJson], {type: "application/json"});
   const DLurl = URL.createObjectURL(blob);
   document.getElementById("downloadLink").href = DLurl;
@@ -123,8 +137,7 @@ function generateDungeon() {
   document.getElementById('downloadJSON').style.display = 'block';
 };
 
-
-// This function takes the maze and the set-up variables and places the keys, locks, \
+// This function takes the maze and the set-up variables and places the keys, locks, 
 // and items in the dungeon. 
 function placeItems(maze,bossKey,dungeonItem,cols,rows,mapDifficulty,compassDifficulty){
   // list of dead ends will be used to place the key item and the boss key
@@ -178,7 +191,7 @@ function placeItems(maze,bossKey,dungeonItem,cols,rows,mapDifficulty,compassDiff
     //  addPrize = true;
     //}
     // earlier version of this had some randomness as to whether a dead end contained an item, but this led to a lot of unsatisfying dead ends, especially in small dungeons
-    // now, all far-away dead ends contain things, and dead ends closer to the start contain the maps. 
+    // now, all far-away dead ends contain things, and dead ends closer to the start contain the map+compass. 
     console.log('map difficulty: '+mapDifficulty)
     let addPrize = true;
     if(addPrize){
@@ -250,8 +263,8 @@ function placeItems(maze,bossKey,dungeonItem,cols,rows,mapDifficulty,compassDiff
 }
 
 // this function sets two variables on every cell
-  // The distance to the critical path
-  // The index of the critical path closest to the cell
+// - The distance to the critical path
+// - The index of the critical path closest to the cell
 function setCritPathDistances(maze,cols,rows){
   for (let i = 0; i < rows; i++) {
     for (let j = 0; j < cols; j++) {
@@ -551,6 +564,7 @@ function cleanKeys(maze,keyLog,lockCount){
 }
 
 // This makes the dungeon grow new branches after being created. 
+// In order to fill out empty space with more branches
 function findNewBranchRoot(maze,visited,row,col){
   let found = false;
   let visitedArray = Array.from(visited);
@@ -599,7 +613,7 @@ function findOpenDirections(current,visited,row,col){
   return possibleDirections;
 }
 
-// Sets the lock variables on the last room of the maze, ie. 'current'
+// Sets the lock variables on the last room of the maze, ie. the input variable 'current'
 function bossLockTheLastRoom(maze,current){
   console.log('Begin bossLockTheLastRoom')
   console.log('we are in this room: '+current)
@@ -726,11 +740,11 @@ function generateHTML(maze){
     return html;
 };
 
-// Converts a maze with generic rooms into one with actual room maps usable by kaboom,
+// Converts a maze array with generic rooms into one with actual room maps usable by kaboom,
 // as well as generating the metadata for the dungeon and the rooms
 function generateMazeMapObj(maze,start){
   let dungeon = {
-    name: dungeonNameGenerator(),
+    name: generateDungeonName(),
     start:start,
     // TO DO: allow the user to select different tilesets, such as Zelda 1 or an open tileset
     // default is gbc, which is what the tutorial used
@@ -741,13 +755,17 @@ function generateMazeMapObj(maze,start){
     // player hitpoints. 2 hitpoints = 1 heart piece
     HP: heartPieces*2,
     // to do: add stuff! Like items!
-    stuff: ['sword','bomb']
+    stuff: ['sword','bomb'],
+    type: 'dungeon'
   };
   for (let i = 0; i < maze.length; i++) {
     let mapRow = [];
     for (let j = 0; j < maze[i].length; j++) {
       let roomDef = selectRoomTemplate(maze[i][j])
+      let mIndx = getRoomTemplateIndex(roomDef)
       let roomMap   = roomDef.map.slice()
+      // return an object showing the characters that should replace the wall characters in the door map
+      let doors = getDoorCharacters(maze[i][j])
       // north
       roomMap = setDoorForRoomGenerator(roomMap,maze[i][j],'north',northDoor,bombNDoor,lockNDoor,bossNDoor,northDoorRow,halfWayX)
       // south
@@ -760,27 +778,27 @@ function generateMazeMapObj(maze,start){
       if(roomDef.treasure.length > 1){
         treasureYX = roomDef.treasure
       }
-      let treasureSymbol = ''
+      //let treasureSymbol = ''
       let trsSprt = ''
       if(maze[i][j].key){
-        treasureSymbol = keySymbol
+        //treasureSymbol = keySymbol
         trsSprt = 'key'
       } else if(maze[i][j].map){
-        treasureSymbol = mapSymbol
+        //treasureSymbol = mapSymbol
         trsSprt = 'map'
       } else if(maze[i][j].compass){
-        treasureSymbol = compassSymbol
+        //treasureSymbol = compassSymbol
         trsSprt = 'compass'
       } else if(maze[i][j].bossKey){
-        treasureSymbol = bKeySymbl
+        //treasureSymbol = bKeySymbl
         trsSprt = 'boss-key'
       } else if(maze[i][j].bossItem){
-        treasureSymbol = itemSymbl
+        //treasureSymbol = itemSymbl
         // to do: change this sprite to a bow
         trsSprt = 'bow'
       } else if(maze[i][j].goal){
         trsSprt = 'triforce'
-        treasureSymbol = winSymbol
+        //treasureSymbol = winSymbol
       }
       // temp: drop treasure on the map, might not always do this, only if it is a bless
       //if(treasureSymbol != ' '){
@@ -800,30 +818,27 @@ function generateMazeMapObj(maze,start){
         !roomDef.bless &&
         // compare a random number A to a random difficulty level in our range B, and if the A is less, lock the doors
         // a more difficult dungeon will have more locked doors
-        Math.floor(Math.random()*11) < difficultyRangeSeed[Math.floor(Math.random() * difficultyRangeSeed.length) ]
-        ){
+        // always lock the doors if there is major treasure in the room
+        (Math.floor(Math.random()*15) < difficultyRangeSeed[Math.floor(Math.random() * difficultyRangeSeed.length)] ||
+          (trsSprt != '' && trsSprt != 'key' && trsSprt != 'map' && trsSprt != 'compass') 
+        )){
           lockDoor = true
       }
       // Return an object which will contain all of the enemies to create along with the map
       let roomOutput = {
-        // this is the array of tiles that makes our room
-        roomMap: roomMap,
-        // once player enters the room, do we lock the doors behind them?
-        lockDoor: lockDoor,
+        // index of this room map in the roomDefinitions array
+        i: mIndx,
+        // object representing the characters for each door in the door map
+        d: doors,
+        // once player enters the room, do we lock the doors behind them until they kill the enemies?
+        lk: lockDoor ? 1 : 0,
         // show the treasure immediately when the player enters the room (true), 
         // or they must defeat all enemies (false)
-        bless: roomDef.bless,
-        // where treasure drops on defeat of all enemies, or on bless
-        treasureYX: treasureYX,
-        // what treasure drops
-        // Removed, game script doesn't use: 
-        //treasureSymbol: treasureSymbol,
-        // trsSprtName
+        b: roomDef.bless ? 1 : 0,
+        // sprite of the treasure that will drop in room
         trsSprt: trsSprt,
         // return a list of enemies
-        enemies: enemies,
-        // used by the game to build the map as player walks around
-        visited:false
+        e: enemies
       }
       mapRow.push(roomOutput)
     }
@@ -832,25 +847,75 @@ function generateMazeMapObj(maze,start){
   return dungeon;
 }
 
-// TO DO: flesh this out!!!
-// Should take into consideration the difficulty of the dungeon, set by the variables at the start
+// Take into consideration the difficulty of the dungeon, set by the variables at the start
 // more difficult enemies show up on harder levels
 function generateEnemies(noEnemies,end,difficultyRangeSeed){
   let enemies = []
   if(noEnemies){
     return enemies
   }
-  enemies.push({
-    type: 'skeletor',
-    movement: 'move-ground',
-    killable: 'killable',
-    hitpoints: 2,
-    quantity: 1,
-    damage: -1,
-    orientX: 0,
-    orientY: -1
-  })
+  const enemyTypesPerRoom = howManyEnemyTypesInRoom()
+  const difficulty = difficultyRangeSeed[Math.floor(Math.random() * difficultyRangeSeed.length)]  
+  let priorEnemy = -1
+  for(let i = 0;i < enemyTypesPerRoom; i++){
+    // if there are multiple enemy types, we do not want to select the same type twice, which causes errors
+    // so if we just picked the exact same one, just pick the next one
+    let enemyIndex  = Math.floor(Math.random() * enemyDirectory.length)
+    if(priorEnemy == enemyIndex){
+      enemyIndex = (enemyIndex + 1 ) % enemyDirectory.length
+    }
+    priorEnemy = enemyIndex
+    console.log(enemyIndex)
+    const enemyData   = enemyDirectory[enemyIndex]
+    const quantity    = Math.ceil( difficulty / enemyData.difficulty / enemyTypesPerRoom  ) // use ceil so there is always at least one enemy in the room // divide by enemy types so that the total difficulty of all baddies adds up
+    enemies.push({
+      t: enemyData.type,
+      q: quantity
+    })
+  }
   return enemies
+}
+
+// This can be sweaked in the future to take other priorities, now is just 50/50
+function howManyEnemyTypesInRoom(){
+  return Math.random() >= 0.5 ? 1 : 2;
+}
+
+// Returns the character to be used for a given door
+function getDoorCharacters(cell){
+  let doors = {
+    n: getDoorChar(cell,'north',northDoor,bombNDoor,lockNDoor,bossNDoor),
+    e: getDoorChar(cell,'east',eastDoor,bombEDoor,lockEDoor,bossEDoor),
+    s: getDoorChar(cell,'south',southDoor,bombSDoor,lockSDoor,bossSDoor),
+    w: getDoorChar(cell,'west',westDoor,bombWDoor,lockWDoor,bossWDoor)
+  }
+  return doors
+}
+function getDoorChar(cell,direction,openChar,bombChar,lockChar,bossChar){
+  // note the capital letter, for camel case
+  let Direction = direction.charAt(0).toUpperCase()+direction.slice(1,direction.length)
+  //console.log('set '+direction+'. Variables, solid wall: '+cell[direction]+', bombLock'+Direction+': '+cell['bombLock'+Direction]+', normal lock:'+cell['lock'+Direction]+', boss lock: '+cell['bossLock'+Direction] )
+  let doorChar = '';
+  if(!cell[direction] || cell['bombLock'+Direction] || cell['lock'+Direction] || cell['bossLock'+Direction]){
+    if(cell['bombLock'+Direction]){
+      doorChar = bombChar;
+    } else if(cell['lock'+Direction]){
+      doorChar = lockChar;
+    } else if(cell['bossLock'+Direction]){
+      doorChar = bossChar;
+    } else if(!cell[direction]){
+      doorChar = openChar;
+    }
+  }
+  return doorChar
+}
+
+function setDoorForRoomGenerator(roomMap,cell,direction,openChar,bombChar,lockChar,bossChar,rowEdit,colEdit){
+  let doorChar = getDoorChar(cell,direction,openChar,bombChar,lockChar,bossChar)
+  if(doorChar != ''){
+    roomMap[rowEdit] = replaceAt( roomMap[rowEdit], colEdit , doorChar, doorChar.length);
+  }
+  return roomMap
 }
 
 function selectRoomTemplate(room){
@@ -868,41 +933,55 @@ function selectRoomTemplate(room){
   return options[ Math.floor( Math.random() * options.length ) ]
 }
 
-function setDoorForRoomGenerator(roomMap,cell,direction,openChar,bombChar,lockChar,bossChar,rowEdit,colEdit){
-  // note the capital letter, for camel case
-  let Direction = direction.charAt(0).toUpperCase()+direction.slice(1,direction.length)
-  //console.log('set '+direction+'. Variables, solid wall: '+cell[direction]+', bombLock'+Direction+': '+cell['bombLock'+Direction]+', normal lock:'+cell['lock'+Direction]+', boss lock: '+cell['bossLock'+Direction] )
-  if(!cell[direction] || cell['bombLock'+Direction] || cell['lock'+Direction] || cell['bossLock'+Direction]){
-    //console.log('direction in room generator: '+direction)
-    let doorChar = '';
-    if(cell['bombLock'+Direction]){
-      doorChar = bombChar;
-    } else if(cell['lock'+Direction]){
-      doorChar = lockChar;
-    } else if(cell['bossLock'+Direction]){
-      doorChar = bossChar;
-    } else if(!cell[direction]){
-      doorChar = openChar;
-    }
-    //console.log('row to edit: '+roomMap[rowEdit])
-    //console.log('rowEdit: '+rowEdit)
-    if(doorChar != ''){
-      //console.log('replaceAt called from setDoorForRoomGenerator')
-      roomMap[rowEdit] = replaceAt( roomMap[rowEdit], colEdit , doorChar, doorChar.length);
-    }
+function getRoomTemplateIndex(roomDef){
+  return roomTemplates.findIndex(room => room === roomDef);
+}
+
+// Random dungeon name word lists!
+// Define word lists
+const dungeonTypes = [
+  'Obsidian', 'Undead', 'Fear', 'Fire', 'Frost', 'Chaos', 'Dragons', 'Ice',
+  'Earth', 'Lightning', 'Ether', 'Nature', 'Poison', 'Shadow', 'Soul', 'Thunder',  "Sun",'Nightmare',
+  "Moon",  "Stars",  "Aurora",  "Harmony",  "Serenity",'Keys'
+];
+
+// Dungeon nouns
+const dungeonNouns = [
+  'Abyss', 'Altar', 'Asylum', 'Basilica', 'Bastion', 'Catacombs', 'Chamber', 'Chapel', 'Cistern', 'Crypt',
+  'Den', 'Dungeon', 'Fortress', 'Grotto', 'Hive', 'Lair', 'Maze', 'Monastery', 'Pit', 'Stronghold',
+  'Temple', 'Tomb', 'Tower', 'Underworld', 'Vestige', 'Void', 'Wasteland', 'Well',
+  "Castle", "Shrine", "Sanctuary", "Citadel", "Palace", "Colosseum","Pyramid","Labyrinth"
+];
+
+// Adjectives
+const dungeonAdjectives = [
+  'Abyssal', 'Ancient', 'Blighted', 'Burning', 'Corrupted','Lost', 'Dark', 'Decrepit', 'Demonic', 'Desolate',
+  'Doomed', 'Eerie', 'Enchanted', 'Endless', 'Fetid', 'Fiery', 'Frostbitten', 'Ghastly', 'Gloomy',
+  'Harrowing', 'Haunted', 'Hellish', 'Infested', 'Maddening', 'Magical', 'Malevolent', 'Necrotic',
+  'Otherworldly', 'Putrid', 'Savage', 'Shrouded', 'Spectral', 'Tainted', 'Thundering', 'Twisted', 'Uncanny','Arcane','Black','White','Red',
+  'Unearthly', 'Venomous', 'Vile','Divine',  "Majestic",  "Sublime",  "Transcendent",  "Angelic",  "Mystic",  "Sacred"
+];
+function generateDungeonName() {
+  // Randomly select a dungeon type, noun, and optional adjective
+  const type = dungeonTypes[Math.floor(Math.random() * dungeonTypes.length)];
+  const noun = dungeonNouns[Math.floor(Math.random() * dungeonNouns.length)];
+  const adjective = dungeonAdjectives[Math.floor(Math.random() * dungeonAdjectives.length)];
+  
+  // Randomly determine which structure to use
+  const structure = Math.floor(Math.random() * 6);
+  
+  // Construct the dungeon name based on the chosen structure
+  if (structure === 0) {
+    return `The ${noun} of ${type}`;
+  } else if (structure === 1) {
+    return `The ${adjective} ${noun}`;
+  }else if (structure === 2) {
+    return `The ${noun} of the ${adjective} ${type}`;
+  } else if (structure === 3) {
+    return `The ${noun} of ${type}`;
+  } else if (structure === 4) {
+    return `The ${type} ${noun}`;
+  } else {
+    return `The ${noun} of the ${type}`;
   }
-  return roomMap
-}
-
-function replaceAt(thestring,index, replacement,droplength) {
-  //console.log(thestring)
-  //console.log(index)
-  //console.log(replacement)
-  //console.log(droplength)
-  return thestring.substring(0, index+(droplength-1)) + replacement + thestring.substring(index+(droplength-1) + replacement.length);
-}
-
-// to do: generate a random dungeon name based on word lists
-function dungeonNameGenerator(){
-  return 'Tomb of To Be Decided'
 }

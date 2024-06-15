@@ -12,7 +12,6 @@ var DUNGEON_DEF  = JSON.parse(jsonData);
 // Speed Constants
 const MOVE_SPEED        = 150
 const PLAYER_DAMAGED_SPD= 200
-const SKELETOR_SPEED    = 60
 const HITSPEED          = 300
 const ARROW_SPEED       = 400
 
@@ -27,15 +26,15 @@ let bombBtn   = 'x'
 let bowBtn    = 'z'
 
 // Time constants
-const ENEMY_HIT_INVULNERABLE    = 0.30
-
 const PLAYER_HIT_NO_CONTROL     = 0.1
 const PLAYER_HIT_INVULNERABLE   = 1
-const SKELETOR_MOVE_CHANGE      = 5
 const BOMB_FUSE                 = 2
 const BOMB_FLICKER              = 1.5
 const BOMB_FLICKER_RATE         = 0.1
 const BOMB_EXPLODE              = 0.5
+
+// Enemy timing constants
+const ENEMY_HIT_INVULNERABLE    = 0.30
 
 // Weapons damage constants
 const SWORD_DAMAGE  = 1
@@ -48,8 +47,10 @@ const startingInventory = {
     map:       DUNGEON_DEF.startMap,
     compass:   DUNGEON_DEF.startCompass,
     stuff:     DUNGEON_DEF.stuff,
-    HP:        32,//DUNGEON_DEF.HP, 
-    maxHP:     32//DUNGEON_DEF.HP//DUNGEON_DEF.HP 
+    HP:        /*32,/*/DUNGEON_DEF.HP, 
+    maxHP:     /*32,/*/DUNGEON_DEF.HP ,
+    bombs:     4,
+    arrows:    0
 }
 
 kaboom({
@@ -87,7 +88,6 @@ loadSprite('east-door', 'w1IYFr1.png')
 loadSprite('south-door', 'znTiYvI.png')
 loadSprite('lanterns', 'wiSiY09.png')
 loadSprite('slicer', 'c6JFi5Z.png')
-loadSprite('skeletor', 'Ei1VnX8.png')
 loadSprite('kaboom', 'o9WizfI.png')
 loadSprite('stairs', 'VghkL08.png')
 loadSprite('bg', '7ByW6aZ.png')
@@ -121,7 +121,41 @@ loadSprite('map-treasure-icon','uTBdWgZ.png')
 loadSprite('hearts','XPr05TD.png',{sliceX:3,sliceY:1})
 // to do: replace with sword
 loadSprite('kaboom', 'o9WizfI.png')
+// enemy sprites, shortened for transmission by short json
+loadSprite('sk', 'Ei1VnX8.png')  // skeletor, aka stalfos
+loadSprite('ks','69arLgS.png',{sliceX:2,sliceY:1}) // keese
+loadSprite('lk','poqDcqk.png',{sliceX:2,sliceY:1}) // like like
+loadSprite('rpl','gz5LHU4.png',{sliceX:2,sliceY:1}) // rope-left
+loadSprite('rpr','FIXKne3.png',{sliceX:2,sliceY:1}) // rope-right
+loadSprite('beam','jZNtYxG.png',{sliceX:4,sliceY:1}) // beam shot by the wizrobes
+loadSprite('wg','Wb8jSwW.png',{sliceX:5,sliceY:1}) // wizrobe, green
 
+// init the game by building the room maps from the roomDefinitions file and the doors provided
+function initMap(){
+    for(let row = 0; row < DUNGEON_DEF.map.length; row++){
+        for(let col = 0; col < DUNGEON_DEF.map[row].length; col++){
+            let mIndx = DUNGEON_DEF.map[row][col].i
+            if(mIndx != null && mIndx < 0){
+                mIndx = 1
+            }
+            let theMap = DUNGEON_DEF.type=='overworld'? mapTemplates[mIndx].map.slice() : roomTemplates[mIndx].map.slice()
+            const doors = DUNGEON_DEF.map[row][col].d
+            // north
+            theMap[northDoorRow] = doors.n != ''?replaceAt(theMap[northDoorRow],halfWayX,doors.n,doors.n.length) : theMap[northDoorRow]
+            // south
+            theMap[southDoorRow] = doors.s != ''?replaceAt(theMap[southDoorRow],halfWayX,doors.s,doors.s.length) : theMap[southDoorRow]
+            // east
+            theMap[eastWestDoorRow] = doors.e != ''?replaceAt(theMap[eastWestDoorRow],eastDoorCol,doors.e,doors.e.length) : theMap[eastWestDoorRow]
+            // west
+            theMap[eastWestDoorRow] = doors.w != ''?replaceAt(theMap[eastWestDoorRow],westDoorCol,doors.w,doors.w.length) : theMap[eastWestDoorRow]
+            DUNGEON_DEF.map[row][col].roomMap = theMap
+            DUNGEON_DEF.map[row][col].visited = false
+            console.log(DUNGEON_DEF.map[row][col].roomMap)
+        }
+    }
+}
+
+initMap();
 
 scene( "game", ({ roomX,roomY,playerX, playerY,orientX, orientY,inventory})=>{
 
@@ -143,7 +177,7 @@ scene( "game", ({ roomX,roomY,playerX, playerY,orientX, orientY,inventory})=>{
         // to do: H should be a moveable block
         //'H': [sprite('block'), solid(), 'wall'],
         // to do: statue sprites:
-        '2': [sprite('block'), solid(), 'wall'],
+        'Z': [sprite('block'), solid(), 'wall'],
         'S': [sprite('block'), solid(), 'wall'],
         [lockWDoor]: [sprite('west-lock'), solid() ,'lock','west-lock'],
         [lockNDoor]: [sprite('north-lock'), solid() ,'lock','north-lock'],
@@ -165,14 +199,16 @@ scene( "game", ({ roomX,roomY,playerX, playerY,orientX, orientY,inventory})=>{
         [compassSymbol]: [sprite('compass'), 'compass','collect'],
         [mapSymbol]: [sprite('map'), 'map','collect'],
         //'*': [sprite('slicer'), 'slicer', { dir: -1 }, 'dangerous'],
-        '}': [sprite('skeletor'), 'dangerous', 'skeletor', { dir: -1, timer: 0 }],
+        '}': [sprite('sk'), 'dangerous', 'sk', { dir: -1, timer: 0 }],
         ')': [sprite('lanterns'), solid()],
         '(': [sprite('fire-pot'), solid()]
-        // TO DO add all of the sprite definitions from the other file
         // load unique sprites for them
         
     }
-
+    console.log(roomX)
+    console.log(roomY)
+    console.log(DUNGEON_DEF.map[roomY][roomX].roomMap)
+    console.log(levelCfg)
     addLevel(DUNGEON_DEF.map[roomY][roomX].roomMap,levelCfg);
     // set current room as visited so it is visible in the map
     DUNGEON_DEF.map[roomY][roomX].visited = true;
@@ -241,13 +277,13 @@ scene( "game", ({ roomX,roomY,playerX, playerY,orientX, orientY,inventory})=>{
     })
 
     keyPress(bombBtn, () => {
-        if(inventory.stuff.includes('bomb')){
+        if(inventory.stuff.includes('bomb') && inventory.bombs > 0){
             spawnBomb(player.pos.add(player.dir.scale(tileXY)))
         }
     })
 
     keyPress(bowBtn, () => {
-        if(inventory.stuff.includes('bow')){
+        if(inventory.stuff.includes('bow') && inventory.arrows > 0){
             shootArrow(player.pos.add(player.dir.scale(tileXY)),player.dir)
         }
     })
@@ -307,7 +343,7 @@ scene( "game", ({ roomX,roomY,playerX, playerY,orientX, orientY,inventory})=>{
 
     // ******** PICKING UP AND PLACING TREASURE *********************
     // PLACE EASY TREASURE ON SCENE LOAD
-    if(DUNGEON_DEF.map[roomY][roomX].bless && 
+    if(DUNGEON_DEF.map[roomY][roomX].b /*bless*/ && 
         DUNGEON_DEF.map[roomY][roomX].trsSprt != null &&
         DUNGEON_DEF.map[roomY][roomX].trsSprt != '' &&
         DUNGEON_DEF.map[roomY][roomX].trsSprt.length > 0)
@@ -315,9 +351,15 @@ scene( "game", ({ roomX,roomY,playerX, playerY,orientX, orientY,inventory})=>{
         addTreasure(DUNGEON_DEF.map[roomY][roomX])
     }
     function addTreasure(roomDef){
+        const mIndx = roomDef.i
+        const roomTemplate = roomTemplates[mIndx]
+        let treasureYX = roomTemplate.treasure
+        if(treasureYX == '*'){
+            treasureYX = [eastWestDoorRow,halfWayX]
+        }
         add([
             sprite(roomDef.trsSprt),
-            pos( tileXY * roomDef.treasureYX[1], tileXY * roomDef.treasureYX[0] ),
+            pos( tileXY * treasureYX[1], tileXY * treasureYX[0] ),
             'collect',
             ''+roomDef.trsSprt
         ])
@@ -337,8 +379,9 @@ scene( "game", ({ roomX,roomY,playerX, playerY,orientX, orientY,inventory})=>{
 
     function collectBow(){
         inventory.stuff.push('bow')
+        inventory.arrows = 20
+        renderButtons()
         noMoreTreasure()
-        // to do: render the bow icon in the 
     }
 
     function collectMap(k){
@@ -424,30 +467,48 @@ scene( "game", ({ roomX,roomY,playerX, playerY,orientX, orientY,inventory})=>{
         unlockDoor(l,bombEDoor,bombWDoor,bombSDoor,bombNDoor,' ')
     })
 
-    // *********** ALL ABOUT ENEMIES!!! *************
+    // *********** ALL ABOUT ENEMIES!!! ****************************************
     // ADD ENEMIES TO THE SCENE
-    console.log('enemies.length: '+DUNGEON_DEF.map[roomY][roomX].enemies.length)
-    if(DUNGEON_DEF.map[roomY][roomX].enemies.length > 0){
+    console.log('enemies.length: '+DUNGEON_DEF.map[roomY][roomX].e.length)
+    if(DUNGEON_DEF.map[roomY][roomX].e.length > 0){
         let filled = []
         filled.push(Math.floor(playerY/tileXY),Math.floor(playerX/tileXY))
         console.log('filled: '+filled)
         let totalEnemies = 0
-        for(let i = 0; i < DUNGEON_DEF.map[roomY][roomX].enemies.length; i++){
-            let enemy = DUNGEON_DEF.map[roomY][roomX].enemies[i]
-            let quantity = enemy.quantity
-            console.log('quantity:'+quantity)
+        for(let i = 0; i < DUNGEON_DEF.map[roomY][roomX].e.length; i++){
+            let enemyType = DUNGEON_DEF.map[roomY][roomX].e[i].t
+            let enemy = enemyDirectory.find(baddie => baddie.type === enemyType);
+            let quantity = DUNGEON_DEF.map[roomY][roomX].e[i].q
+            console.log('quantity on room load: '+quantity)
             totalEnemies = totalEnemies + quantity
             while(quantity > 0){
                 let position = getRandUnfilledPosition(filled)
                 console.log('add '+enemy.type+ ' to scene')
+                let mySprite = enemy.type
+                if(enemy.hasOwnProperty('sprites')){
+                    // For now simply select the first of the possible sprites
+                    mySprite = enemy.sprites[0];
+                }
                 add([
-                    sprite(enemy.type),
+                    sprite(mySprite, {animSpeed: enemy.animSpeed }),
                     pos( tileXY * position[1], tileXY * position[0] ),
                     ''+enemy.type,
                     ''+enemy.movement,
                     ''+enemy.killable,
                     'dangerous',
-                    {type: enemy.type, HP:enemy.hitpoints , dirX: enemy.orientX, dirY: enemy.orientY, timer: 0,stuck:0,justDamaged:false,spriteOn:true,sprite:enemy.type}
+                    {   type: enemy.type, 
+                        timeIntervals: enemy.timeIntervals, 
+                        speed:enemy.speed, 
+                        HP:enemy.hitpoints , 
+                        dirX: enemy.orientX, 
+                        dirY: enemy.orientY, 
+                        timer: 0,
+                        stuck:0,
+                        justDamaged:false,
+                        spriteOn:true,
+                        sprite:mySprite,
+                        speed:enemy.speed
+                    }
                 ])
                 console.log(enemy.orientX+', '+enemy.orientY)
                 quantity--
@@ -455,20 +516,18 @@ scene( "game", ({ roomX,roomY,playerX, playerY,orientX, orientY,inventory})=>{
             }
         }
         // do we lock the doors until all enemies are killed?
-        if(totalEnemies > 0 && DUNGEON_DEF.map[roomY][roomX].lockDoor){
-            console.log('SET LOCK TRIGGERS!')
+        if(totalEnemies > 0 && DUNGEON_DEF.map[roomY][roomX].lk){
             setLockTriggers()
         }
     }
 
+    // What happens when the player touches something that causes damage
     player.collides('dangerous', (e) => {
         if(!player.justDamaged){
             const damage = e.damage != null ? e.damage : -1
             editHP(damage)
             player.justDamaged  = true
-            //player.controlOn    = false
             wait(PLAYER_HIT_NO_CONTROL, () => {
-                //player.controlOn = true
                 wait(PLAYER_HIT_INVULNERABLE - PLAYER_HIT_NO_CONTROL, () => {
                     player.justDamaged  = false
                     player.spriteOn     = true
@@ -581,18 +640,35 @@ scene( "game", ({ roomX,roomY,playerX, playerY,orientX, orientY,inventory})=>{
     // function for checking if we open the doors, and if so open them
     function openEnemyDoorsCheck(){
         let totalEnemies = 0
-        for(let i = 0; i < DUNGEON_DEF.map[roomY][roomX].enemies.length; i++){
-            totalEnemies = totalEnemies + DUNGEON_DEF.map[roomY][roomX].enemies[i].quantity
+        for(let i = 0; i < DUNGEON_DEF.map[roomY][roomX].e.length; i++){
+            totalEnemies = totalEnemies + DUNGEON_DEF.map[roomY][roomX].e[i].q
         }
         if(totalEnemies <= 0){
             destroyAll('enemy-locked-door')
         }
     }
 
-    // DEFINE ENEMY AI, SPEED, ETC
-    action('skeletor', (s) => {
-        handleRandomMovement(s,SKELETOR_SPEED,SKELETOR_MOVE_CHANGE)
+    // *****************DEFINE ENEMY AI, SPEED, ETC**************************
+    // SKELETOR
+    action('sk', (s) => {
+        handleRandomMovement(s,s.speed,s.timeIntervals['changeDir'])
     })
+    // LikeLike
+    action('lk', (l) => {
+        handleRandomMovement(l,l.speed,l.timeIntervals['changeDir'])
+    })
+
+    // Rope
+    action('rp', (l) => {
+        handleRandomMovement(l,l.speed,l.timeIntervals['changeDir'])
+    })
+
+    // TO DO add AI for new enemies
+    // ks, keese bat. Fly around, animate, slow down the animation speed and stop moving. Random direction changes. Must stay on screen.
+    // wg, wizrobe green. Hat. Pick direction. Stand up. Shoot. Hat. Disapear. Doesn't move. 
+    // lk, likelike. For now, can be same as the skeletor with its own movement
+
+
 
     // Handle the sprite flicker on 
     action('killable', (k) => {
@@ -645,7 +721,7 @@ scene( "game", ({ roomX,roomY,playerX, playerY,orientX, orientY,inventory})=>{
         if(s.justDamaged){
             tempSpeed = HITSPEED
         }
-        console.log('just damaged:'+s.justDamaged)
+        //console.log('just damaged:'+s.justDamaged)
         s.move(s.dirX * tempSpeed,s.dirY * tempSpeed )
     }
     // generates a position in the room that is not already occupied by a wall, the player at start, or an enemy
@@ -657,16 +733,14 @@ scene( "game", ({ roomX,roomY,playerX, playerY,orientX, orientY,inventory})=>{
             randY = Math.floor(Math.random()*(DUNGEON_DEF.map[roomY][roomX].roomMap.length-2)+1)
             randX = Math.floor(Math.random()*(DUNGEON_DEF.map[roomY][roomX].roomMap[0].length-2)+1)
             tile = DUNGEON_DEF.map[roomY][roomX].roomMap[randY].substring(randX, randX+1)
-            console.log('tile at random position '+randY+', '+randX +': "'+tile+'"')
+            //console.log('tile at random position '+randY+', '+randX +': "'+tile+'"')
             if(filled.includes( [randY,randX])){
                 tile = '#'
-                console.log('but that spot is already filled')
+               //console.log('but that spot is already filled')
             }
         }
         return [randY,randX]
     }
-
-    
 
     // ******************** WEAPON AND ITEM USE  ***********
     // to do: replace with sword
@@ -676,12 +750,6 @@ scene( "game", ({ roomX,roomY,playerX, playerY,orientX, orientY,inventory})=>{
             destroy(obj)
         })
     }
-    // sword damages enemies
-    collides('sword', 'killable', (s,k) => {
-        if(!k.justDamaged){
-            damageEnemy(k,player.dir.x,player.dir.y,SWORD_DAMAGE)
-        } 
-    })
 
     // create an arrow
     function shootArrow(p,d){
@@ -705,6 +773,8 @@ scene( "game", ({ roomX,roomY,playerX, playerY,orientX, orientY,inventory})=>{
             'arrow',
             {dir: d}
         ])
+        inventory.arrows--
+        arrowLabel.text = 'x'+inventory.arrows
     }
     action('arrow', (a) => {
         a.move(a.dir.x*ARROW_SPEED, a.dir.y*ARROW_SPEED )
@@ -716,21 +786,14 @@ scene( "game", ({ roomX,roomY,playerX, playerY,orientX, orientY,inventory})=>{
             destroy(a)
         }
     })
-    // arrow damages enemies
-    collides('arrow', 'killable', (a,k) => {
-        if(!k.justDamaged){
-            // TO DO make enemy bounce away from a bomb
-            // Don't just let this be 0,0
-            damageEnemy(k,a.dir.x,a.dir.y,ARROW_DAMAGE)
-            destroy(a)
-        } 
-    })
 
     // Create a bomb on the map and handle its timers and explosion
     function spawnBomb(p) {
         const bomb = add([sprite('bomb'), pos(p.x+(tileXY/4),p.y), area(vec2(), vec2(tileXY/2,tileXY)), 'bomb'])
         const explodeX = bomb.pos.x-(tileXY*.75)
         const explodeY = bomb.pos.y-(tileXY*.5)
+        inventory.bombs--
+        bombLabel.text = 'x'+inventory.bombs
         wait(BOMB_FUSE, () => {
             const bomb_fuse = add([sprite('bomb-red'),  area(vec2(), vec2(tileXY/2,tileXY)), pos(bomb.pos), 'bomb-fuse',{spriteOn:true,sprite:'bomb-red',oppSprite:'bomb',timer:BOMB_FLICKER_RATE}])
             destroy(bomb)
@@ -759,12 +822,31 @@ scene( "game", ({ roomX,roomY,playerX, playerY,orientX, orientY,inventory})=>{
         }
     })
 
+    //********************* DAMAGING ENEMIES ************* */
+
+    // sword damages enemies
+    collides('sword', 'killable', (s,k) => {
+        if(!k.justDamaged){
+            damageEnemy(k,player.dir.x,player.dir.y,SWORD_DAMAGE)
+        } 
+    })
+
     // bomb damages enemies
     collides('bomb-explode', 'killable', (b,k) => {
         if(!k.justDamaged){
             // TO DO make enemy bounce away from a bomb
             // Don't just let this be 0,0
             damageEnemy(k,0,0,BOMB_DAMAGE)
+        } 
+    })
+
+    // arrow damages enemies
+    collides('arrow', 'killable', (a,k) => {
+        if(!k.justDamaged){
+            // TO DO make enemy bounce away from a bomb
+            // Don't just let this be 0,0
+            damageEnemy(k,a.dir.x,a.dir.y,ARROW_DAMAGE)
+            destroy(a)
         } 
     })
 
@@ -788,20 +870,32 @@ scene( "game", ({ roomX,roomY,playerX, playerY,orientX, orientY,inventory})=>{
     // Kill enemy
     function removeEnemyFromRoom(enemyType){
         let remaining = 0
-        for(let i = 0; i < DUNGEON_DEF.map[roomY][roomX].enemies.length; i++){
-            if(DUNGEON_DEF.map[roomY][roomX].enemies[i].type == enemyType){
-                DUNGEON_DEF.map[roomY][roomX].enemies[i].quantity--
+        for(let i = 0; i < DUNGEON_DEF.map[roomY][roomX].e.length; i++){
+            if(DUNGEON_DEF.map[roomY][roomX].e[i].t == enemyType){
+                DUNGEON_DEF.map[roomY][roomX].e[i].q--
             }
-            remaining = remaining + DUNGEON_DEF.map[roomY][roomX].enemies[i].quantity
+            remaining = remaining + DUNGEON_DEF.map[roomY][roomX].e[i].q
+            console.log('remaining '+DUNGEON_DEF.map[roomY][roomX].e[i].t+': '+DUNGEON_DEF.map[roomY][roomX].e[i].q)
         }
         if(remaining == 0 && 
-            !DUNGEON_DEF.map[roomY][roomX].bless && 
+            !DUNGEON_DEF.map[roomY][roomX].b/*bless*/ && 
             DUNGEON_DEF.map[roomY][roomX].trsSprt){
                 addTreasure(DUNGEON_DEF.map[roomY][roomX])
             }
     }
 
+
+
     // ********* UI AND DEBUGGING DISPLAY *******
+
+    // render the UI on load
+    if(inventory.map){renderHasMap()}
+    if(inventory.bossKey){renderBossKey()}
+    if(inventory.compass){renderHasCompass()}
+    renderButtons()
+    renderHealth()
+    renderMap()
+
     /*const roomLabel = add([
         text('row: '+roomY+ ', col: '+roomX),
         pos(400, tileXY*9.5),
@@ -812,23 +906,15 @@ scene( "game", ({ roomX,roomY,playerX, playerY,orientX, orientY,inventory})=>{
         scale(2),
         color(0,0,0)
     ])*/
-    
-    
-    // TO DO:
-    // create text for the 3 action buttons, and show the icons
-    // show player health in hearts
-    // show if the player has the compass, map, and boss key
-
-
 
     const keyIcon = add([
         sprite('key'),
-        pos(tileXY*(halfWayX), tileXY*(southDoorRow+1)),
+        pos(tileXY*(halfWayX-1) , tileXY*(southDoorRow+1)),
         layer('ui'),
     ])
     let keysLabel = add([
         text('x'+inventory.keys),
-        pos(tileXY*(halfWayX+0.825),tileXY*(southDoorRow+1.375)),
+        pos(tileXY*(halfWayX-0.175),tileXY*(southDoorRow+1.375)),
         layer('ui'),
         {
             value: 'x'+inventory.keys,
@@ -836,39 +922,139 @@ scene( "game", ({ roomX,roomY,playerX, playerY,orientX, orientY,inventory})=>{
         scale( 2),
         color(0,0,0)
     ])
+    const bombIcon = add([
+        sprite('bomb'),
+        pos(tileXY*(halfWayX-.75) , tileXY*(southDoorRow+2)),
+        layer('ui'),
+    ])
+    let bombLabel = add([
+        text('x'+inventory.bombs),
+        pos(tileXY*(halfWayX-0.175),tileXY*(southDoorRow+2.375)),
+        layer('ui'),
+        {
+            value: 'x'+inventory.bombs,
+        },
+        scale( 2),
+        color(0,0,0)
+    ])
+    const arrowIcon = add([
+        sprite('arrow-north'),
+        pos(tileXY*(halfWayX-.75) , tileXY*(southDoorRow+3)),
+        layer('ui'),
+    ])
+    let arrowLabel = add([
+        text('x'+inventory.arrows),
+        pos(tileXY*(halfWayX-0.175),tileXY*(southDoorRow+3.375)),
+        layer('ui'),
+        {
+            value: 'x'+inventory.arrows,
+        },
+        scale( 2),
+        color(0,0,0)
+    ])
+    
     function renderBossKey(){
         add([
             sprite('boss-key'),
             layer('ui'),
-            pos(tileXY*(halfWayX+0.05), tileXY*(southDoorRow+2.9)),
+            pos(tileXY*(halfWayX+.8), tileXY*(southDoorRow+1)),
         ])
     }
     function renderHasMap(){
         add([
             sprite('map'),
             layer('ui'),
-            pos(tileXY*(halfWayX), tileXY*(southDoorRow+2)),
+            pos(tileXY*(halfWayX+0.75), tileXY*(southDoorRow+2.05)),
         ])
     }
     function renderHasCompass(){
         add([
             sprite('compass'),
             layer('ui'),
-            pos(tileXY*(halfWayX+0.75), tileXY*(southDoorRow+2)),
+            pos(tileXY*(halfWayX+0.75), tileXY*(southDoorRow+3)),
         ])
     }
+
+    function renderButtons(){
+        destroyAll('controls')
+        add([
+            text('Z'),
+            pos(tileXY*(halfWayX+2.625), tileXY*(southDoorRow+2.25)),
+            layer('ui'),
+            'controls',
+            {
+                value: 'Z',
+            },
+            scale(3),
+            color(0,0,0)
+        ])
+        add([
+            text('X'),
+            pos(tileXY*(halfWayX+4), tileXY*(southDoorRow+2.25)),
+            layer('ui'),
+            'controls',
+            {
+                value: 'X',
+            },
+            scale(3),
+            color(0,0,0)
+        ])
+        add([
+            text('C'),
+            pos(tileXY*(halfWayX+5.365), tileXY*(southDoorRow+2.25)),
+            layer('ui'),
+            'controls',
+            {
+                value: 'C',
+            },
+            scale(3),
+            color(0,0,0)
+        ])
+        add([
+            text('[  ][  ][  ]'),
+            pos(tileXY*(halfWayX+2.25), tileXY*(southDoorRow+2.75)),
+            layer('bg'),
+            'controls',
+            {
+                value: '[  ][  ][  ]',
+            },
+            scale(vec2(2,7)),
+            color(0,0,0)
+        ])
+        
+        if(inventory.stuff.includes('bow')){
+            add([
+                sprite('bow'),
+                layer('ui'),
+                'controls',
+                pos(tileXY*(halfWayX+2.625),  tileXY*(southDoorRow+2.75)),
+            ])
+        }
+        if(inventory.stuff.includes('bomb')){
+            add([
+                sprite('bomb'),
+                layer('ui'),
+                'controls',
+                pos(tileXY*(halfWayX+4),  tileXY*(southDoorRow+2.75)),
+            ])
+        }
+        if(inventory.stuff.includes('sword')){
+            add([
+                sprite('sword-icon'),
+                layer('ui'),
+                'controls',
+                pos(tileXY*(halfWayX+5.365),  tileXY*(southDoorRow+2.75)),
+            ])
+        }
+    }
     
-    if(inventory.map){renderHasMap()}
-    if(inventory.bossKey){renderBossKey()}
-    if(inventory.compass){renderHasCompass()}
-
-
     function renderHealth(){
         // remove current healthbar when needing to refresh
         destroyAll('heart-bar')
         let heartCount     = inventory.maxHP/2
         let currentHealth  = inventory.HP/2
-        let heartOffset = 2
+        const startHeartOffset = 2
+        let heartOffset = startHeartOffset
         let vertOffset = 0
         console.log('heartCount'+inventory.HP)
         for(let h = 0; h < heartCount; h++ ){
@@ -884,34 +1070,12 @@ scene( "game", ({ roomX,roomY,playerX, playerY,orientX, orientY,inventory})=>{
             ])
             console.log('heartCount'+heartCount)
             heartOffset +=0.5
-            if(vertOffset == 0 && h == 7){
+            if(vertOffset == 0 && h == 8){
                 vertOffset = 0.5
-                heartOffset = 2
+                heartOffset = startHeartOffset
             }
         }
     }
-    renderHealth()
-
-    /*const mapLabel = add([
-        text('Map: '+inventory.map),
-        pos(400, tileXY*11),
-        layer('ui'),
-        {
-            value: 'Map: '+inventory.map,
-        },
-        scale(2),
-    ])
-    const compassLabel = add([
-        text('Compass: '+inventory.compass),
-        pos(400, tileXY*11.5),
-        layer('ui'),
-        {
-            value: 'Compass: '+inventory.compass,
-        },
-        scale(2),
-    ])*/
-    
-    renderMap()
 
     // **************** RENDERING MAP AND COMPASS *******
     function renderMap(){
@@ -924,7 +1088,7 @@ scene( "game", ({ roomX,roomY,playerX, playerY,orientX, orientY,inventory})=>{
         const mapCellYpadding   = 0
         const mapCellXpadding   = 0
         // width of the map area
-        const maxMapWidth       = (tileXY*halfWayX)-(tileXY*0.25)
+        const maxMapWidth       = (tileXY*halfWayX)-(tileXY*1.25) // half minus one, with padding
         // height of map area, ie all of the area below the play area minus some padding
         const maxMapHeight      = (heightTile*tileXY)-(tileXY*originYmultiplier)-(0.25*tileXY)
         // to justify the the middle of the map area...
@@ -1000,26 +1164,24 @@ scene( "game", ({ roomX,roomY,playerX, playerY,orientX, orientY,inventory})=>{
         const doors = [' ',lockNDoor,lockSDoor,lockEDoor,lockWDoor,bombNDoor,bombSDoor,bombEDoor,bombWDoor,bossSDoor,bossWDoor,bossNDoor,bossEDoor]
         let index = 0;
         // north
-        if(doors.includes(roomDef.roomMap[northDoorRow].substring(halfWayX,halfWayX+1))){
+        if(doors.includes(roomDef.d.n)){
             index += 1
         }
         // east
-        if(doors.includes(roomDef.roomMap[eastWestDoorRow].substring(eastDoorCol,eastDoorCol+1))){
+        if(doors.includes(roomDef.d.e)){
             index += 2
         }
         // south
-        if(doors.includes(roomDef.roomMap[southDoorRow].substring(halfWayX,halfWayX+1))){
+        if(doors.includes(roomDef.d.s)){
             index += 4
         }
         //west
-        if(doors.includes(roomDef.roomMap[eastWestDoorRow].substring(westDoorCol,westDoorCol+1))){
+        if(doors.includes(roomDef.d.w)){
             index += 8
         }
         return index;
     }
     
-
-
     // **************** GRAPHICS FUNCTIONS **************
     
     // Flickers a sprite on and off, such as when damaged

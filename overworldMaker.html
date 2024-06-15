@@ -1,0 +1,98 @@
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>zelda overworld.js</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="shared/constants.js"></script>
+    <script src="shared/roomTemplates.js"></script>
+    <script src="shared/worldMapScreenTemplates.js"></script>
+    <script src="shared/enemies.js"></script>
+    <script src="overworldMaker.js"></script>
+</head>
+<body>
+    <div id="main">
+        <div id="presets">
+            <h2>Select Game Difficulty</h2>
+            <div id="easy" class="difficulty">
+                <input type="button" value="Easy Adventure" onclick="easyMap()" />
+                <p>
+                    Smaller map with fewer dungeons. 
+                </p>
+            </div>
+            <div id="med" class="difficulty">
+                <input type="button" value="Midling Adventure" onclick="medMap()" />
+                <p>
+                    8x8, more to do and discover.
+                </p>
+            </div>
+            <div id="hard" class="difficulty">
+                <input type="button" value="Hard Adventure" onclick="hardMap()" />
+                <p>
+                    A huge 8x16 maze as complex as some published games.
+                </p>
+            </div>
+            <a id="advToggle" href="#" onclick="toggleAdvanced()">Advanced Settings</a>
+        </div>
+        
+        <div id="advSettings">
+            
+            <h2>Advanced Settings</h2>
+            <div class="normalInput">
+                <label for="width">Map Width</label>
+                <input id="width" type="number" min="5" value="6">
+            </div>
+            <div class="normalInput">
+                <label for="height">Map Height</label>
+                <input id="height" type="number" min="5" value="6">
+            </div>
+            <p>The world map will have exactly these dimensions.</p>
+            <div class="normalInput">
+                <label for="dungeons">🏛️ Dungeon Count</label>
+                <input id="dungeons" type="number" min="1" value="6">
+            </div>
+            <div class="normalInput">
+                <label for="fairies">🧚‍♀️ Fairy Fountain Count</label>
+                <input id="fairies" type="number" min="0" value="2">
+            </div>
+            <div class="slider">
+                <label for="secretPercent">% of screens with secret caves</label>
+                <input id="secretPercent" type="range" step="0.01" min="0.05" max="1" value="0.35" oninput="secretPercentValue.innerText = (Math.floor(this.value*100))+'%'">
+                <p id="secretPercentValue">35%</p>
+            </div>
+            <p>The tool will add secret caves to the map at this rate. Note that the tool will fail if you set this too high.</p>
+            <div class="slider">
+                <label for="openPercent">Openness multiplier</label>
+                <input id="openPercent" type="range" step="0.1" min="0.5" max="2" value="1" oninput="openPercentValue.innerText = (Math.floor(this.value*100))+'%'">
+                <p id="openPercentValue">1</p>
+            </div>
+            <p>"Openness" is the liklihood that a given screen is open to another neighboring screen. Use this slider to change how easy the map is to traverse. 
+                Increase the openness, and there will be fewer dead ends, and more sreens will open onto their neighbors. Decrease openness, 
+                and the world will be more maze-like! Note that the tool will *always* verify that each screen can be navigated to from the starting
+                screen, and it will always attempt to place locations of interest in dead ends first. Different biomes have different openness as well.
+            </p>
+            <div class="normalInput">
+                <input type="button" value="Generate World Map" onclick="advMap()" />
+            </div>
+        </div>
+        
+        <p id="PlayNow">
+
+        </p>
+        <p id="downloadJSON" style="display:none">
+            <a id="downloadLink" download="myFile.json">Download JSON</a>
+        </p>
+        
+
+    </div>
+    <div id="renderTable">
+
+    </div>
+    
+    
+
+
+
+
+
+</body>
+</html>

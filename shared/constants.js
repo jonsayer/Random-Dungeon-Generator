@@ -42,3 +42,8 @@ const eastDoorCol = baseRoom[0].length-1
 const northDoorRow = 0
 const westDoorCol = 0
 const halfWayX = Math.floor(baseRoom[0].length/2)
+
+// Utility function that replaces a character at a position in a string, used in both pages
+function replaceAt(thestring,index, replacement,droplength) {
+    return thestring.substring(0, index+(droplength-1)) + replacement + thestring.substring(index+(droplength-1) + replacement.length);
+  }

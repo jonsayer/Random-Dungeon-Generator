@@ -29,7 +29,8 @@ body {
         clear:left;
         display: block;
     }
-    td {min-width:25px;min-height: 25px;}
+    #renderTable{overflow:visible;clear:both;}
+    td {width:120px;min-height: 100px;}
 
     .slider {
         max-width: 600px;
