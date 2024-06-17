@@ -2,9 +2,11 @@
 
 This is a work in progress for generating random Zelda dungeons and eventually an overworld with dungeons for a Zelda-style game. 
 
-The game uses the Kaboom! 0.5.0 to play. It expands upon a basic Zelda clone tutorial for Kaboom by ([freecodecamp.org on YouTube](https://www.youtube.com/watch?v=4OaHB0JbJDI)).
+The game uses the Kaboom! 0.5.0 to play. It expands upon a basic Zelda clone tutorial for Kaboom by [freecodecamp.org on YouTube](https://www.youtube.com/watch?v=4OaHB0JbJDI).
 
 ## How to use it
+
+[Click here to generate and play a dungeon](https://jonsayer.github.io/Random-Dungeon-Generator/mazeMaker.html)
 
 On mazeMaker.html, select the different options to generate a dungeon. You can create an easy, middling, or hard dungeon using pre-set values. Clicking "Advanced settings" opens the full set of options available to you. 
 
@@ -46,7 +48,7 @@ This basically uses a depth-first-search algorithm to generate a maze with multi
 
 ## In Progress: Overworld Generator
 
-overworldMaker.html is a work in progress. It generates an overworld map for a Zelda 1-style game. 
+[overworldMaker.html](https://jonsayer.github.io/Random-Dungeon-Generator/mazeMaker.html) is a work in progress. It generates an overworld map for a Zelda 1-style game. 
 
 It worlds by setting starting points randomly across the map for the different "biomes" of the map, with would be the maps various regions where one might imagine the style of the tileset would show trees for a forest, rocks for a mountain, etc. It randomly grows each biome until they cross some sort of threshold. It adds random connections between screens of each biome, then connects the biomes to each other before finally making sure there are no isolated screens, connecting those to the map at large. 
 
@@ -74,15 +76,15 @@ You *can* click the "Play Now" link, and it will pass a playable JSON to play.js
 
 - Add a boss room to the dungeons, their weakness depending on the dungeon item. 
 - More diverse enemies. 
-- More dungeon items to find. 
+- More dungeon items to find and use, such as a hookshot. 
 - Replace the Zelda graphics with open source alternatives. 
-- Animated player sprite.
-- Replace the Kaboom 0.5.0 game engine with something more robust. Oddly, actually playing the game is less interesting to me than generating the maps, so don't expect this!
-- Add a sword swing animation instead of a bland "BAM!" icon for a sword swing. 
+- Animated/walking player sprite.
+- Replace the Kaboom 0.5.0 game engine with something more robust. Oddly, actually playing the game is less interesting to me than generating the maps, so don't expect this very soon!
+- Add a sword swing animation instead of a bland "explosion" icon for a sword swing. 
 - A overworld graphics to the overworld generator, with different screen maps that can connect to one another. 
 - Connect the overworld generator to the dungeon generator so that it creates both together, and mod the player allowing the player can traverse from the overworld to dungeons and back again. 
 - I have general intentions to use the code from this to create a new repository that creates a playable dungeon in GB Studio, instead of javascript. If I make that, I will likely not deploy it to this repository but its own. 
 
 ## Don't sue me Nintendo
 
-- Obviously the graphics are from Nintendo's "The Legend of Zelda: Link's Awakening" for Game Boy Color. Go buy that game, it's great. I am using the graphics as fair use for eductional purposes, for now. 
+- Obviously the graphics are from Nintendo's "The Legend of Zelda: Link's Awakening" for Game Boy Color. Go buy that game, it's great. I am using the graphics as fair use for eductional purposes, and they will be replaced in the final version. 
